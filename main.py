@@ -10,6 +10,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Checks for available vaccination slots")
     parser.add_argument('--interval', '-i', dest='interval', type=int, default=60, help='The interval to check backends for')
     parser.add_argument('--verbose', '-v', action='store_true', help='enable debug output')
+    parser.add_argument('--test', '-t', action='store_true', help='use test backends (fake data)')
 
     return parser.parse_args()
 
@@ -42,7 +43,13 @@ def main():
 
     while True:
         logger.info("Entering loop")
-        for b in BACKENDS:
+        backends = BACKENDS
+
+        if args.test:
+            from config import TEST_BACKENDS
+            backends = TEST_BACKENDS
+
+        for b in backends:
             run_backend(b)
 
         logger.info("Sleeping for %d sec" % args.interval)

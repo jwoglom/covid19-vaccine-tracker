@@ -2,6 +2,7 @@ from backends.curative import CurativeBackend
 from backends.rxtouch import RxTouchBackend
 
 from notifiers.console import ConsoleNotifier
+from notifiers.slack import SlackNotifier
 
 # Construct backends using the provided services for
 # specific locations or areas (e.g., using a ZIP code)
@@ -13,5 +14,6 @@ BACKENDS = [
 # Specify ways in which you want to be notified
 # about available doses
 NOTIFIERS = [
-    ConsoleNotifier()
+    ConsoleNotifier(),
+    SlackNotifier('slack_api_token', '#slack-channel', 'bot-username')
 ]

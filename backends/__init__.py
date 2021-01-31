@@ -6,10 +6,15 @@ class Backend:
     # VaccineSlots: returns slot data
     def get_slots(self):
         pass
+    
+    # returns public URL
+    def public_url(self):
+        pass
 
 class VaccineSlots:
-    def __init__(self, location, slots=[]):
+    def __init__(self, location, url, slots=[]):
         self.location = location
+        self.url = url
         self.slots = slots
 
     def add_slot(self, slot):

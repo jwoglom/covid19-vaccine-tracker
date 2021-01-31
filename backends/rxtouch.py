@@ -13,6 +13,9 @@ class RxTouchBackend(Backend):
 
     def __repr__(self):
         return "RxTouchBackend(%s, %s)" % (self.locid, self.zip)
+    
+    def public_url(self):
+        return self.INDEX_URL % self.locid
 
     def check_zip(self):
         output = None
@@ -31,4 +34,4 @@ class RxTouchBackend(Backend):
         return self.NOT_AVAIL_MSG not in self.check_zip()
 
     def get_slots(self):
-        return VaccineSlots(self.check_zip())
+        return VaccineSlots(self.check_zip(), self.public_url())
