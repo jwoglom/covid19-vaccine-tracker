@@ -18,7 +18,7 @@ class SlackNotifier(Notifier):
         text = "Vaccination appointment%s found for *%s*:" % ("s" if len(slots.slots) > 1 else "", slots.location)
         sections = [text, {"type": "divider"}] + ["%s" % s for s in slots.slots] + [self.slack_action_block(("Visit Site", slots.url))]
         blocks = self.slack_markdown_blocks(*sections)
-        logger.warning(self.slack_post("", blocks))
+        logger.warning(self.slack_post("%s %s" % (text, " ".join([s for s in slots.slots])), blocks))
     
     def slack_markdown_blocks(self, *args):
         return [
