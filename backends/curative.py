@@ -6,8 +6,9 @@ class CurativeBackend(Backend):
     TESTING_SITES_API = "https://labtools.curativeinc.com/api/v1/testing_sites/%s"
     PUBLIC_URL = "https://curative.com/sites/%s"
 
-    def __init__(self, locid):
+    def __init__(self, locid, min_count=1):
         self.locid = locid
+        self.min_count = min_count
 
     def __repr__(self):
         return "CurativeBackend(%s)" % self.locid
@@ -45,4 +46,4 @@ class CurativeBackend(Backend):
 
     def slots_available(self):
         s = self.get_slots()
-        return len(s.slots) > 0
+        return len(s.slots) >= self.min_count
