@@ -50,7 +50,7 @@ def main():
     def run_notify(slots):
         for n in get_notifiers():
             try:
-                logger.warning("Running notify for %s" % n)
+                logger.warning("Running notify for %s (%d)" % (n, len(slots.slots)))
                 n.notify(slots)
             except Exception:
                 logger.exception("Unable to run notify: %s" % n)
