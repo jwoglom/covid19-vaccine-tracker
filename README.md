@@ -15,3 +15,13 @@ The following notifiers are supported:
 * Slack
 
 Currently a work-in-progress.
+
+## Setup
+
+Rename `config.py.example` to `config.py` and tweak its parameters (e.g., ZIP code, location radius, etc).
+
+Then, run `pipenv run python3 main.py` to run the application using Pipenv.
+For verbose logging, add `-v`.
+To adjust the check interval, specify `-i <seconds>`.
+
+See `--help` for more options.
