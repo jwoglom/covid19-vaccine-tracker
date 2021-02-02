@@ -1,11 +1,13 @@
 from . import Backend, VaccineSlots
+
 import requests
 import logging
+import arrow
 
 logger = logging.getLogger(__name__)
 
 class CVSPharmacyBackend(Backend):
-    PUBLIC_URL = 'https://www.cvs.com/vaccine/intake/store/cvd-store-select/first-dose-select'
+    PUBLIC_URL = 'https://www.cvs.com/vaccine/intake/store/cvd-schedule'
     STORES_API = 'https://www.cvs.com/Services/ICEAGPV1/immunization/1.0.0/getIMZStores'
     # YYYY-MM-DD, CVS_xxxx
     TIMESLOT_API = 'https://api.cvshealth.com/scheduler/v3/clinics/availabletimeslots?visitStartDate=%s&visitEndDate=%s&clinicId=%s'
@@ -98,13 +100,19 @@ class CVSPharmacyBackend(Backend):
         locations = r.get('locations', [])
         for l in locations:
             store = "%s %s, %s %s" % (l.get('addressLine'), l.get('addressCityDescriptionText'), l.get('addressState'), l.get('addressZipCode'))
-            avail = l.get('immunizationAvailability', {}).get('available')
+            avail = ', '.join(l.get('immunizationAvailability', {}).get('available'))
 
             if len(avail) > 0:
                 timeslots = self.get_timeslots(l, dates)
                 if timeslots:
-                    slots.add_slot("*%s* has %s available between %s and %s (%d timeslots)" % (store, avail, timeslots[0], timeslots[-1], len(timeslots)))
+                    slots.add_slot("*%s* has %s available %s between %s and %s (%d timeslots)" % (store, avail, self.humanize_date(timeslots[0]), self.prettify_date(timeslots[0]), self.prettify_date(timeslots[-1]), len(timeslots)))
                 else:
-                    slots.add_slot("*%s* has %s available with unknown timeslots" % (store, avail))
+                    slots.add_slot("*%s* has %s available with unknown timeslots: dates %s" % (store, avail, dates))
 
         return slots
+
+    def humanize_date(self, d):
+        return arrow.get(d).humanize()
+
+    def prettify_date(self, d):
+        return arrow.get(d).format('MM/DD hh:mma')
