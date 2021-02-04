@@ -3,6 +3,7 @@ from . import Backend, VaccineSlots
 import requests
 import logging
 import arrow
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -49,10 +50,10 @@ class CVSPharmacyBackend(Backend):
         }
     
     def get_stores_json(self):
-        r = requests.post(self.STORES_API, json=self.build_stores_data())
+        r = requests.post(self.STORES_API, json=self.build_stores_data(), headers={"accept": "application/json"})
         if r.status_code != 200:
-            logger.error("Error in cvs stores: %s " % r.text)
-            logger.error("Data: %s" % self.build_stores_data())
+            logger.error("Error in cvs stores (%s): %s " % (r.status_code, r.text))
+            logger.error("Data: %s" % json.dumps(self.build_stores_data()))
         return r.json()
     
     def get_timeslots_json(self, start_date, end_date, store_id):
