@@ -20,6 +20,9 @@ class SlackNotifier(Notifier):
         blocks = self.slack_markdown_blocks(*sections)
         logger.warning(self.slack_post("%s %s" % (text, " ".join([s for s in slots.slots])), blocks))
     
+    def notify_problem(self, message):
+        logger.warning(self.slack_post(message))
+    
     def slack_markdown_blocks(self, *args):
         return [
             {

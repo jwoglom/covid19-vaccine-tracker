@@ -18,3 +18,6 @@ class VaccineSlots:
 
     def add_slot(self, slot):
         self.slots.append(slot)
+    
+    def __str__(self):
+        return "%s slots (%d)" % (self.location, len(self.slots))

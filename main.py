@@ -1,6 +1,7 @@
 import argparse
 import time
 import logging
+import collections
 
 from config import BACKENDS, NOTIFIERS
 
@@ -12,6 +13,8 @@ def parse_args():
     parser.add_argument('--verbose', '-v', action='store_true', help='enable debug output')
     parser.add_argument('--test', '-t', action='store_true', help='use test backends (fake data)')
     parser.add_argument('--console', '-c', action='store_true', help='only use console backend')
+    parser.add_argument('--notify-exceptions', action='store_true', help='send a notification when there are more than exceptions_to_notify total exceptions raised for a given backend')
+    parser.add_argument('--exceptions-to-notify', type=int, default=5, help='send a notification after a specific exception in a backend has occurred N or more times')
 
     return parser.parse_args()
 
@@ -19,6 +22,8 @@ def main():
     args = parse_args()
     if args.verbose:
         logging.basicConfig(level=logging.INFO)
+    
+    problems = {}
 
     def get_backends():
         if args.test:
@@ -33,6 +38,26 @@ def main():
             return [ConsoleNotifier()]
 
         return NOTIFIERS
+    
+    def check_notify_problems():
+        for b in problems:
+            common = problems[b].most_common()
+            to_alert = list(filter(lambda x: x[1] >= args.exceptions_to_notify and x[1] % args.exceptions_to_notify == 0, common))
+            for exc, cnt in to_alert:
+                msg = "Exception occurred %d times in %s: %s" % (cnt, b, exc)
+                for n in get_notifiers():
+                    try:
+                        n.notify_problem(msg)
+                    except Exception:
+                        pass
+    
+    def process_problem(b, e):
+        if b not in problems:
+            problems[b] = collections.Counter()
+        problems[b].update([e])
+        cnt = problems[b].get(e)
+        logger.exception("Logging failure for %s: '%s' has occurred %s times" % (b, e, cnt))
+        check_notify_problems()
 
     def run_backend(b):
         try:
@@ -44,13 +69,14 @@ def main():
                     run_notify(slots)
             else:
                 logger.info("No slots available for backend: %s" % b)
-        except Exception:
-            logger.exception("Unable to run backend: %s" % b)
+        except Exception as e:
+            logger.exception("Unable to run backend: %s\n%s" % (b, e))
+            process_problem('%s' % b, '%s' % e)
 
     def run_notify(slots):
         for n in get_notifiers():
             try:
-                logger.warning("Running notify for %s (%d)" % (n, len(slots.slots)))
+                logger.warning("Running notify for %s (%s)" % (n, slots))
                 n.notify(slots)
             except Exception:
                 logger.exception("Unable to run notify: %s" % n)
