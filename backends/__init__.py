@@ -10,14 +10,26 @@ class Backend:
     def __repr__(self):
         return "%s" % (self.__class__.__name__)
 
+class Availability:
+    def __init__(self, date=None, location=None, address=None, count=None, vaccine_type=None, details=None):
+        self.date = date
+        self.location = location
+        self.address = address
+        self.count = count
+        self.vaccine_type = vaccine_type
+        self.details = details
+
 class VaccineSlots:
     def __init__(self, location, url, slots=None):
         self.location = location
         self.url = url
         self.slots = slots or []
+        self.slots_struct = []
 
-    def add_slot(self, slot):
+    def add_slot(self, slot, struct=None):
         self.slots.append(slot)
+        if struct:
+            self.slots_struct.append(struct)
     
     def __str__(self):
         return "%s slots (%d)" % (self.location, len(self.slots))

@@ -1,4 +1,4 @@
-from . import Backend, VaccineSlots
+from . import Backend, VaccineSlots, Availability
 
 import requests
 import logging
@@ -144,7 +144,16 @@ class CVSPharmacyBackend(Backend):
             if len(avail) > 0:
                 timeslots = self.get_timeslots(l, dates, req)
                 if timeslots:
-                    slots.add_slot("*%s* has %s available %s between %s and %s (%d timeslots)" % (store, avail, self.humanize_date(timeslots[0]), self.prettify_date(timeslots[0]), self.prettify_date(timeslots[-1]), len(timeslots)))
+                    slots.add_slot(
+                        "*%s* has %s available %s between %s and %s (%d timeslots)" % (store, avail, self.humanize_date(timeslots[0]), self.prettify_date(timeslots[0]), self.prettify_date(timeslots[-1]), len(timeslots)),
+                        struct=Availability(
+                            date=timeslots[0],
+                            location=l.get('addressLine'),
+                            address=store,
+                            count=len(timeslots),
+                            vaccine_type=avail,
+                            details=None
+                        ))
                 else:
                     slots.add_slot("*%s* has %s available with unknown timeslots: dates %s" % (store, avail, dates))
 

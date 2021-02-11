@@ -1,4 +1,4 @@
-from . import Backend, VaccineSlots
+from . import Backend, VaccineSlots, Availability
 
 import requests
 from bs4 import BeautifulSoup
@@ -81,7 +81,18 @@ class MAImmunizationsBackend(Backend):
                 break
 
             for r in open_results:
-                slots.add_slot(self.to_text(r))
+                loc = r["title"]
+                date = ""
+                if " on " in r["title"]:
+                    loc, date = r["title"].split(" on ", 1)
+
+                slots.add_slot(self.to_text(r), struct=Availability(
+                    date=date,
+                    location=loc,
+                    address=r["address"],
+                    count=r[self.AVAIL_TEXT],
+                    vaccine_type=r[self.OFFERED_TEXT]
+                ))
             
             p += 1
         

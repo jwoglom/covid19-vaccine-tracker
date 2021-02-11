@@ -1,4 +1,4 @@
-from . import Backend, VaccineSlots
+from . import Backend, VaccineSlots, Availability
 import requests
 import arrow
 
@@ -26,7 +26,18 @@ class CurativeBackend(Backend):
                ("\n_public: %d/%d, " % (win["public_slots_available"], win["public_slots"])) + \
                ("first responder: %d/%d, " % (win["first_responder_slots_available"], win["first_responder_slots"])) + \
                ("symptomatic: %d/%d_ " % (win["symptomatic_slots_available"], win["symptomatic_slots"]))
-               
+    
+    def struct(self, win, sites):
+        return Availability(
+            date=win["start_time"],
+            location=sites["name"],
+            address="%s, %s, %s %s" % (sites["street_address_1"], sites["city"], sites["state"], sites["postal_code"]),
+            count=win["slots_available"],
+            vaccine_type=None,
+            details=("public: %d/%d, " % (win["public_slots_available"], win["public_slots"])) + \
+               ("first responder: %d/%d, " % (win["first_responder_slots_available"], win["first_responder_slots"])) + \
+               ("symptomatic: %d/%d" % (win["symptomatic_slots_available"], win["symptomatic_slots"]))
+        )
 
     def humanize_date(self, d):
         return arrow.get(d).humanize()
@@ -40,7 +51,7 @@ class CurativeBackend(Backend):
 
         for win in sites["appointment_windows"]:
             if win["slots_available"] > 0:
-                s.add_slot(self.prettify(win))
+                s.add_slot(self.prettify(win), struct=self.struct(win, sites))
 
         return s
 
