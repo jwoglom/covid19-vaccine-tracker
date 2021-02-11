@@ -1,9 +1,18 @@
-from . import Backend, VaccineSlots
+from . import Backend, VaccineSlots, Availability
 import requests
+import re
+import logging
+import datetime
+
+logger = logging.getLogger(__name__)
 
 class RxTouchBackend(Backend):
     INDEX_URL = "https://%s.rxtouch.com/rbssched/program/covid19/Patient/Advisory"
     CHECK_ZIP_API = "https://%s.rxtouch.com/rbssched/program/covid19/Patient/CheckZipCode"
+
+    SET_LOCATION_URL = "https://%s.rxtouch.com/rbssched/program/covid19/Patient/SetLocation?mode=0"
+    APPOINTMENT_URL = "https://%s.rxtouch.com/rbssched/program/covid19/Patient/Schedule?zip=%s&appointmentType=5957"
+    PATIENT_CALENDAR_API = "https://%s.rxtouch.com/rbssched/program/covid19/Calendar/PatientCalendar"
 
     NOT_AVAIL_MSG = "There are no locations with available appointments"
 
@@ -17,21 +26,86 @@ class RxTouchBackend(Backend):
     def public_url(self):
         return self.INDEX_URL % self.locid
 
-    def check_zip(self):
-        output = None
+    def check_calendar(self):
         with requests.Session() as s:
             # Initialize cookies
             s.get(self.INDEX_URL % self.locid)
-            r = s.post(self.CHECK_ZIP_API % self.locid, data={
-                "zip": self.zip,
-                "appointmentType": 5957,
-                "PatientInterfaceMode": 0
+
+            # r = s.post(self.CHECK_ZIP_API % self.locid, data={
+            #     "zip": self.zip,
+            #     "appointmentType": 5957,
+            #     "PatientInterfaceMode": 0
+            # })
+            # output = r.text
+
+            s.post(self.SET_LOCATION_URL % (self.locid), data={
+                "AppointmentType": 5957,
+                "AppointmentTypeText": "",
+                "zip": "%s" % self.zip
             })
-            output = r.text
-        return output
+            r = s.get(self.APPOINTMENT_URL % (self.locid, self.zip))
+
+            facilityIdRe = re.compile('\\$.calendar.facilityId = (.*);')
+            facilityId = facilityIdRe.search(r.text)
+
+            if facilityId is not None:
+                facilityId = facilityId.group(1)
+            else:
+                raise Exception("RxTouch: no facility id could be found on page")
+            
+            if facilityId == "0":
+                logger.info("RxTouch: facility id empty")
+                return {"name": None, "calendar": None}
+
+            facilityNameRe = re.compile('<input type="hidden" id="hdn%s" value="(.*)" />' % facilityId)
+            facilityName = facilityNameRe.search(r.text).group(1)
+
+            monthRe = re.compile('\\$.calendar.month = (.*);')
+            month = monthRe.search(r.text).group(1)
+            yearRe = re.compile('\\$.calendar.year = (.*);')
+            year = yearRe.search(r.text).group(1)
+
+            p = s.post(self.PATIENT_CALENDAR_API % self.locid, data={
+                "facilityId": facilityId,
+                "month": month,
+                "year": year,
+                "snapCalendarToFirstAvailMonth": "false"
+            })
+            return {"name": facilityName, "calendar": p.json()}
+        return {}
+    
+    def calendar_process(self):
+        output = self.check_calendar()
+        name = output["name"]
+        c = output["calendar"]
+
+        if name is None and c is None:
+            return [], None
+
+        if not c['Success']:
+            logger.warning("Checking rxtouch calendar was not success: %s" % c)
+            return [], None
+        
+        dates = []
+        yr = c['Data']['Year']
+        month = c['Data']['Month']
+        for days in c['Data']['Days']:
+            if days['Available']:
+                dates.append((days['DayOfWeek'], days['DayNumber'], month, yr))
+        
+        return dates, name
+
 
     def slots_available(self):
-        return self.NOT_AVAIL_MSG not in self.check_zip()
+        dates, name = self.calendar_process()
+        return len(dates) > 0
 
     def get_slots(self):
-        return VaccineSlots(self.check_zip(), self.public_url())
+        dates, name = self.calendar_process()
+        s = VaccineSlots(name, self.public_url())
+        for day in dates:
+            s.add_slot("%s %s %s, %s" % (day[0], day[2], day[1], day[3]), struct=Availability(
+                date=datetime.datetime(day[3], day[2], day[1])
+            ))
+        
+        return s
