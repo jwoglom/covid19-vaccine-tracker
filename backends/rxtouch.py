@@ -25,11 +25,39 @@ class RxTouchBackend(Backend):
     
     def public_url(self):
         return self.INDEX_URL % self.locid
+    
+
+    def _query_index(self, s):
+        s.get(self.INDEX_URL % self.locid)
+
+    def _query_set_location(self, s):
+        s.post(self.SET_LOCATION_URL % (self.locid), data={
+                "AppointmentType": 5957,
+                "AppointmentTypeText": "",
+                "zip": "%s" % self.zip
+            })
+    
+    def _query_appointments(self, s):
+        r = s.get(self.APPOINTMENT_URL % (self.locid, self.zip))
+        if r.status_code >= 300:
+            raise Exception('Problem getting appointments (%d): %s' % (r.status_code, r.text))
+        return r.text
+    
+    def _query_calendar(self, s, facilityId, month, year):
+        r = s.post(self.PATIENT_CALENDAR_API % self.locid, data={
+            "facilityId": facilityId,
+            "month": month,
+            "year": year,
+            "snapCalendarToFirstAvailMonth": "false"
+        })
+        if r.status_code >= 300:
+            raise Exception('Problem getting calendar (%d): %s' % (r.status_code, r.text))
+        return r.json()
 
     def check_calendar(self):
         with requests.Session() as s:
             # Initialize cookies
-            s.get(self.INDEX_URL % self.locid)
+            self._query_index(s)
 
             # r = s.post(self.CHECK_ZIP_API % self.locid, data={
             #     "zip": self.zip,
@@ -38,15 +66,12 @@ class RxTouchBackend(Backend):
             # })
             # output = r.text
 
-            s.post(self.SET_LOCATION_URL % (self.locid), data={
-                "AppointmentType": 5957,
-                "AppointmentTypeText": "",
-                "zip": "%s" % self.zip
-            })
-            r = s.get(self.APPOINTMENT_URL % (self.locid, self.zip))
+            self._query_set_location(s)
+
+            text = self._query_appointments(s)
 
             facilityIdRe = re.compile('\\$.calendar.facilityId = (.*);')
-            facilityId = facilityIdRe.search(r.text)
+            facilityId = facilityIdRe.search(text)
 
             if facilityId is not None:
                 facilityId = facilityId.group(1)
@@ -58,20 +83,15 @@ class RxTouchBackend(Backend):
                 return {"name": None, "calendar": None}
 
             facilityNameRe = re.compile('<input type="hidden" id="hdn%s" value="(.*)" />' % facilityId)
-            facilityName = facilityNameRe.search(r.text).group(1)
+            facilityName = facilityNameRe.search(text).group(1)
 
             monthRe = re.compile('\\$.calendar.month = (.*);')
-            month = monthRe.search(r.text).group(1)
+            month = monthRe.search(text).group(1)
             yearRe = re.compile('\\$.calendar.year = (.*);')
-            year = yearRe.search(r.text).group(1)
+            year = yearRe.search(text).group(1)
 
-            p = s.post(self.PATIENT_CALENDAR_API % self.locid, data={
-                "facilityId": facilityId,
-                "month": month,
-                "year": year,
-                "snapCalendarToFirstAvailMonth": "false"
-            })
-            return {"name": facilityName, "calendar": p.json()}
+            cal = self._query_calendar(s, facilityId, month, year)
+            return {"name": facilityName, "calendar": cal}
         return {}
     
     def calendar_process(self):

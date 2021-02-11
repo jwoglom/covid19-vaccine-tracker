@@ -1,7 +1,7 @@
-from . import Backend, VaccineSlots
+from . import Backend, VaccineSlots, Availability
 import requests
 
-"""This is an example backend for a ficticious website."""
+"""This is an example backend for a ficticious website. It does not function."""
 class ExampleBackend(Backend):
 
     """Pass any arguments needed as configuration here."""
@@ -29,6 +29,13 @@ class ExampleBackend(Backend):
         r = requests.get("http://example.com/vaccination_appointments")
 
         for appointment in r.json():
-            slots.add_slot("%s on %s" % (appointment["time"], appointment["date"]))
+            slots.add_slot("%s on %s" % (appointment["time"], appointment["date"]), struct=Availability(
+                date="%s %s" % (appointment["date"], appointment["time"]),
+                location="Fake Location",
+                address="123 Fake St.",
+                count=50,
+                vaccine_type="Moderna",
+                details="Available to those > 75 years old"
+            ))
         
         return slots

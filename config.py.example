@@ -2,8 +2,10 @@ from backends.curative import CurativeBackend
 from backends.rxtouch import RxTouchBackend
 from backends.maimmunizations import MAImmunizationsBackend
 from backends.cvs import CVSPharmacyBackend
+from backends.example import ExampleBackend
 
 from backends.curative_test import CurativeTestBackend
+from backends.rxtouch_test import RxTouchTestBackend
 from backends.maimmunizations_test import MAImmunizationsTestBackend
 from backends.cvs_test import CVSPharmacyTestBackend
 
@@ -30,7 +32,13 @@ NOTIFIERS = [
 
 # Used for testing. These backends provide fake data.
 TEST_BACKENDS = [
-    CurativeTestBackend(True),
-    MAImmunizationsTestBackend(True),
-    CVSPharmacyTestBackend(True)
+    # An example backend. Does not work.
+    # ExampleBackend("1234"),
+    # Adjust the boolean argument as to whether they should provide
+    # fake appointment data (True), or output that there are no
+    # appointments available (False)
+    CurativeTestBackend(False),
+    RxTouchTestBackend(False),
+    MAImmunizationsTestBackend(False),
+    CVSPharmacyTestBackend(False)
 ]
