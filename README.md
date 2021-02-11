@@ -28,3 +28,7 @@ For verbose logging, add `-v`.
 To adjust the check interval, specify `-i <seconds>`.
 
 See `--help` for more options.
+
+## License
+
+This code may be used, modified, or adapted for any non-commercial purpose related to helping individuals become vaccinated against COVID-19, as long as attribution is provided to the original project.
