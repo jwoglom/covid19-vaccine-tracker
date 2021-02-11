@@ -20,7 +20,7 @@ class SlackNotifier(Notifier):
         blocks = self.slack_markdown_blocks(*sections)
         logger.info("Sending notification: %s" % blocks)
         post = self.slack_post("%s %s" % (text, " ".join([s for s in slots.slots])), blocks)
-        is_ok = post.get('response_metadata', {}).get('ok', False)
+        is_ok = post.get('ok', False)
         if not is_ok:
             logger.error("Problem querying slack API: %s Excluding blocks" % post)
             post = self.slack_post("%s %s" % (text, " ".join([s for s in slots.slots])))
