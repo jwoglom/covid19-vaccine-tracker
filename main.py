@@ -25,6 +25,7 @@ def main():
     args = parse_args()
     if args.verbose:
         logging.basicConfig(level=logging.INFO)
+    logger.info("Starting")
     
     problems = {}
 

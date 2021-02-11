@@ -18,7 +18,16 @@ class SlackNotifier(Notifier):
         text = "Vaccination appointment%s found for *%s*:" % ("s" if len(slots.slots) > 1 else "", slots.location)
         sections = [text, {"type": "divider"}] + ["%s" % s for s in slots.slots] + [self.slack_action_block(("Visit Site", slots.url))]
         blocks = self.slack_markdown_blocks(*sections)
-        logger.warning(self.slack_post("%s %s" % (text, " ".join([s for s in slots.slots])), blocks))
+        logger.info("Sending notification: %s" % blocks)
+        post = self.slack_post("%s %s" % (text, " ".join([s for s in slots.slots])), blocks)
+        is_ok = post.get('response_metadata', {}).get('ok', False)
+        if not is_ok:
+            logger.error("Problem querying slack API: %s Excluding blocks" % post)
+            post = self.slack_post("%s %s" % (text, " ".join([s for s in slots.slots])))
+            logger.warning(post)
+        else:
+            logger.info("Successfully posted to Slack API: %s" % post)
+
     
     def notify_problem(self, message):
         logger.warning(self.slack_post(message))
