@@ -9,12 +9,13 @@ Please be a good citizen by ensuring those who need the vaccine are able to get 
 Currently, the following services are supported:
 * Curative (curative.com/sites/<location_id>)
 * RxTouch (<location_id>.rxtouch.com/covid19/Patient/Advisory)
-* CVS Pharmacy (cvs.com/vaccine/intake/store/cvd-schedule)
+* CVS Pharmacy (cvs.com/vaccine/intake/store/cvd-schedule) _**Note:** after a few attempts, CVS currently detects this script as a bot and blocks further requests. Some additional work will be necessary to avoid being banned._ 
 * MAImmunizations (maimmunizations.org)
 
 The following notifiers are supported:
 * Console (to stdout, for debugging)
-* Slack
+* CSV log (appends all available appointments to a csv file for later review)
+* Slack (via webhook -- specify API token, slack channel, and bot username in config.py)
 
 Currently a work-in-progress.
 
