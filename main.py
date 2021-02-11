@@ -16,6 +16,7 @@ def parse_args():
     parser.add_argument('--verbose', '-v', action='store_true', help='enable debug output')
     parser.add_argument('--test', '-t', action='store_true', help='use test backends (fake data)')
     parser.add_argument('--console', '-c', action='store_true', help='only use console backend')
+    parser.add_argument('--csv', action='store_true', help='only use csv backend')
     parser.add_argument('--notify-exceptions', action='store_true', help='send a notification when there are more than exceptions_to_notify total exceptions raised for a given backend')
     parser.add_argument('--exceptions-to-notify', type=int, default=5, help='send a notification after a specific exception in a backend has occurred N or more times')
 
@@ -40,6 +41,10 @@ def main():
         if args.console:
             from notifiers.console import ConsoleNotifier
             return [ConsoleNotifier()]
+        
+        if args.csv:
+            from notifiers.csvlog import CSVLogNotifier
+            return [CSVLogNotifier()]
 
         return NOTIFIERS
     
