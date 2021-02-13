@@ -6,9 +6,10 @@ class CurativeBackend(Backend):
     TESTING_SITES_API = "https://labtools.curativeinc.com/api/v1/testing_sites/%s"
     PUBLIC_URL = "https://curative.com/sites/%s"
 
-    def __init__(self, locid, min_count=1):
+    def __init__(self, locid, min_count=1, ignore_dates_before=None):
         self.locid = locid
         self.min_count = min_count
+        self.ignore_dates_before = ignore_dates_before
 
     def __repr__(self):
         return "CurativeBackend(%s)" % self.locid
@@ -44,13 +45,18 @@ class CurativeBackend(Backend):
 
     def prettify_date(self, d):
         return arrow.get(d).format('MM/DD hh:mma')
+    
+    def date_in_range(self, date):
+        if self.ignore_dates_before:
+            return arrow.get(date) >= arrow.get(self.ignore_dates_before)
+        return True
 
     def get_slots(self):
         sites = self.get_testing_sites()
         s = VaccineSlots("%s (%s, %s, %s %s)" % (sites["name"], sites["street_address_1"], sites["city"], sites["state"], sites["postal_code"]), self.public_url())
 
         for win in sites["appointment_windows"]:
-            if win["slots_available"] > 0:
+            if win["slots_available"] > 0 and self.date_in_range(win["start_time"]):
                 s.add_slot(self.prettify(win), struct=self.struct(win, sites))
 
         return s
