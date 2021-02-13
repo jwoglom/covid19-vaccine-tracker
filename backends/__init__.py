@@ -40,3 +40,6 @@ class VaccineSlots:
 
     def __str__(self):
         return "%s slots (%d)" % (self.location, len(self.slots))
+    
+    def empty_copy(self):
+        return VaccineSlots(self.location, self.url)

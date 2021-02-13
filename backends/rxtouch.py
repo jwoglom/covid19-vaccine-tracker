@@ -124,7 +124,7 @@ class RxTouchBackend(Backend):
         dates, name = self.calendar_process()
         s = VaccineSlots(name, self.public_url())
         for day in dates:
-            s.add_slot("%s %s %s, %s" % (day[0], day[2], day[1], day[3]), struct=Availability(
+            s.add_slot("%s %s" % (day[0], datetime.datetime(day[3], day[2], day[1]).date()), struct=Availability(
                 date=datetime.datetime(day[3], day[2], day[1]),
                 location=name,
                 address=None,
