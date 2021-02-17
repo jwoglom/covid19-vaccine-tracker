@@ -1,4 +1,5 @@
 from . import Backend, VaccineSlots, Availability
+from .common import random_user_agent
 
 import requests
 import logging
@@ -10,18 +11,10 @@ import time
 logger = logging.getLogger(__name__)
 
 class CVSPharmacyBackend(Backend):
-    USERAGENTS = [
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.146 Safari/537.36',
-        'Mozilla/5.0 (iPad; CPU OS 14_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/87.0.4280.77 Mobile/15E148 Safari/604.1',
-        'Mozilla/5.0 (Linux; Android 10; SM-G960U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.141 Mobile Safari/537.36',
-        'Mozilla/5.0 (Linux; Android 10; LM-Q710(FGN)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.141 Mobile Safari/537.36'
-    ]
     PUBLIC_URL = 'https://www.cvs.com/vaccine/intake/store/cvd-schedule'
     STORES_API = 'https://www.cvs.com/Services/ICEAGPV1/immunization/1.0.0/getIMZStores'
     # YYYY-MM-DD, CVS_xxxx
     TIMESLOT_API = 'https://api.cvshealth.com/scheduler/v3/clinics/availabletimeslots?visitStartDate=%s&visitEndDate=%s&clinicId=%s'
-
-    IMZ_URL = 'https://www.cvs.com/Services/ICEAGPV1/immunization/1.0.0/getImzNDC'
 
     NOT_FOUND = 'No stores with immunizations found'
     NOT_AVAILABLE = 'Inventory unavailable for all stores'
@@ -62,7 +55,7 @@ class CVSPharmacyBackend(Backend):
     def headers(self, json=True):
         return {
             "accept": "application/json" if json else "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
-            "user-agent": random.choice(self.USERAGENTS),
+            "user-agent": random_user_agent(),
             "Accept-Encoding": "gzip, deflate", 
             "Accept-Language": "en-US,en-GB;q=0.9,en;q=0.8", 
             "Dnt": "1", 
@@ -96,41 +89,29 @@ class CVSPharmacyBackend(Backend):
                 ret.append(ts)
         
         return ret
-    
-    def generic_requests(self, req):
-        req.get(self.PUBLIC_URL, headers=self.headers())
-        time.sleep(random.randint(2, 10))
-        req.post(self.IMZ_URL, json=self.build_stores_data(payload={
-            "data": {
-                "immunizationCode": "CVD"
-            }
-        }), headers=self.headers())
-
 
     def slots_available(self):
-        req = requests.Session()
-        if random.choice([True, False, False]):
-            self.generic_requests(req)
-
-        j = self.get_stores_json(req)
+        j = self.get_stores_json(requests.Session())
 
         status = j.get('responseMetaData', {}).get('statusDesc')
+        logger.info("CVS stores status: %s" % status)
+
+        self._cached_store_json = j
         if status in (self.NOT_AVAILABLE, self.NOT_FOUND):
             return False
         
-        self._cached_store_json = j
-        self._cached_session = req
         return True
 
 
     def get_slots(self):
-        req = self._cached_session if self._cached_session else requests.Session()
+        req = requests.Session()
 
         slots = VaccineSlots("CVS Pharmacy", self.public_url())
         j = self._cached_store_json if self._cached_store_json else self.get_stores_json(req)
 
         status = j.get('responseMetaData', {}).get('statusDesc')
         if status in (self.NOT_AVAILABLE, self.NOT_FOUND):
+            logger.info("CVS stores status: %s" % status)
             return slots
         
         r = j.get('responsePayloadData', {})
@@ -140,8 +121,10 @@ class CVSPharmacyBackend(Backend):
         for l in locations:
             store = "%s %s, %s %s" % (l.get('addressLine'), l.get('addressCityDescriptionText'), l.get('addressState'), l.get('addressZipCode'))
             avail = ', '.join(l.get('immunizationAvailability', {}).get('available'))
+            logger.info("CVS store %s has avail %d: %s" % (store, len(avail), avail))
 
             if len(avail) > 0:
+                time.sleep(random.randint(4, 8))
                 timeslots = self.get_timeslots(l, dates, req)
                 if timeslots:
                     slots.add_slot(
