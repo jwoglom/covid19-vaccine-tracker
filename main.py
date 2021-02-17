@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Checks for available vaccination slots")
+    parser.add_argument('--single', '-s', dest='single', action='store_true', help='Only run once, instead of at a designated interval. For use with an existing cron-like setup.')
     parser.add_argument('--interval', '-i', dest='interval', type=int, default=60, help='The interval to check backends for')
     parser.add_argument('--exclude-night-hours', action='store_true', help='Skip running between 1am and 8am')
     parser.add_argument('--verbose', '-v', action='store_true', help='enable debug output')
@@ -104,6 +105,10 @@ def main():
 
             for b in backends:
                 run_backend(b)
+
+        if args.single:
+            logger.info("Exiting")
+            return
 
         secs = random.randint(int(0.75 * args.interval), int(1.25 * args.interval))
         logger.info("Sleeping for %d sec" % secs)
