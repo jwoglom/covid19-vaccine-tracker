@@ -9,7 +9,7 @@ Please be a good citizen by ensuring those who need the vaccine are able to get 
 Currently, the following services are supported:
 * Curative (curative.com/sites/<location_id>)
 * RxTouch (<location_id>.rxtouch.com/covid19/Patient/Advisory)
-* CVS Pharmacy (cvs.com/vaccine/intake/store/cvd-schedule) _**Note:** after a few attempts, CVS currently detects this script as a bot and blocks further requests. Some additional work will be necessary to avoid being banned._ 
+* CVS Pharmacy (cvs.com/vaccine/intake/store/cvd-schedule) _**Note:** after a few attempts, CVS currently detects this script as a bot and blocks further requests. [See info in issue thread](https://github.com/jwoglom/covid19-vaccine-tracker/issues/1)_ 
 * MAImmunizations (maimmunizations.org)
 
 The following notifiers are supported:
