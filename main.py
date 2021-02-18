@@ -11,8 +11,9 @@ logger = logging.getLogger(__name__)
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Checks for available vaccination slots")
-    parser.add_argument('--single', '-s', dest='single', action='store_true', help='Only run once, instead of at a designated interval. For use with an existing cron-like setup.')
-    parser.add_argument('--interval', '-i', dest='interval', type=int, default=60, help='The interval to check backends for')
+    parser.add_argument('--stop-after', '-a', dest='stop_after', type=int, default=-1, help='Stop the script after this many iterations. Default is infinite. If using with an existing cron-like setup, set to 1.')
+    parser.add_argument('--interval', '-i', dest='interval', type=int, default=300, help='The interval to check backends for')
+    parser.add_argument('--randomize-interval', action='store_true', help='Randomize the interval used for scraping')
     parser.add_argument('--exclude-night-hours', action='store_true', help='Skip running between 1am and 8am')
     parser.add_argument('--verbose', '-v', action='store_true', help='enable debug output')
     parser.add_argument('--test', '-t', action='store_true', help='use test backends (fake data)')
@@ -95,6 +96,7 @@ def main():
         now = datetime.datetime.now()
         return now.hour >= 1 and now.hour <= 7
 
+    run_times = 0
     while True:
         logger.info("Entering loop")
 
@@ -106,11 +108,15 @@ def main():
             for b in backends:
                 run_backend(b)
 
-        if args.single:
-            logger.info("Exiting")
+        run_times += 1
+        if args.stop_after > 0 and run_times >= args.stop_after:
+            logger.info("Exiting: Ran %d times" % run_times)
             return
 
-        secs = random.randint(int(0.75 * args.interval), int(1.25 * args.interval))
+        secs = args.interval
+        if args.randomize_interval:
+            secs = random.randint(int(0.75 * args.interval), int(1.25 * args.interval))
+
         logger.info("Sleeping for %d sec" % secs)
         time.sleep(secs)
 
