@@ -36,7 +36,15 @@ class SlackNotifier(Notifier):
             logger.info("Ignoring notify due to config: %s" % orig_slots)
             return
 
-        text = "Vaccination appointment%s found for *%s*:" % ("s" if len(slots.slots) > 1 else "", slots.location)
+        base_count = len(slots.slots)
+        count = 0
+        for s in slots.slots_struct:
+            if s and s.count:
+                count += s.count
+        if count == 0:
+            count = base_count
+
+        text = "%d Vaccination appointment%s found for *%s*:" % (count, "s" if count > 1 else "", slots.location)
         sections = [text, {"type": "divider"}] + ["%s" % s for s in slots.slots] + [self.slack_action_block(("Visit Site", slots.url))]
         blocks = self.slack_markdown_blocks(*sections)
         logger.info("Sending notification: %s" % blocks)
