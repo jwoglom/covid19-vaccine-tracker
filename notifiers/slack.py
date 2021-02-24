@@ -10,11 +10,12 @@ logger = logging.getLogger(__name__)
 class SlackNotifier(Notifier):
     ICON_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/SARS-CoV-2_without_background.png/220px-SARS-CoV-2_without_background.png'
 
-    def __init__(self, slack_token, slack_channel, slack_username, ignore_dates_before=None):
+    def __init__(self, slack_token, slack_channel, slack_username, ignore_dates_before=None, min_open_slots=0):
         self.slack_token = slack_token
         self.slack_channel = slack_channel
         self.slack_username = slack_username
         self.ignore_dates_before = ignore_dates_before
+        self.min_open_slots = min_open_slots
 
     def process_slots(self, slots):
         if self.ignore_dates_before:
@@ -43,6 +44,10 @@ class SlackNotifier(Notifier):
                 count += s.count
         if count == 0:
             count = base_count
+
+        if count < self.min_open_slots:
+            logger.info("Ignoring notify due to only %d slots available (required %d)" % (count, self.min_open_slots))
+            return
 
         text = "%d Vaccination appointment%s found for *%s*:" % (count, "s" if count > 1 else "", slots.location)
         sections = [text, {"type": "divider"}] + ["%s" % s for s in slots.slots] + [self.slack_action_block(("Visit Site", slots.url))]
