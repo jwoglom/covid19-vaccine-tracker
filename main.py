@@ -111,7 +111,7 @@ def main():
         run_times += 1
         if args.stop_after > 0 and run_times >= args.stop_after:
             logger.info("Exiting: Ran %d times" % run_times)
-            return
+            exit(0)
 
         secs = args.interval
         if args.randomize_interval:

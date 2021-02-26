@@ -79,7 +79,7 @@ class RxTouchBackend(Backend):
                 raise Exception("RxTouch: no facility id could be found on page")
             
             if facilityId == "0":
-                logger.info("RxTouch: facility id empty")
+                logger.info("RxTouch: facility id empty -- no open locations with appointments")
                 return {"name": None, "calendar": None}
 
             facilityNameRe = re.compile('<input type="hidden" id="hdn%s" value="(.*)" />' % facilityId)

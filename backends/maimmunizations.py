@@ -25,7 +25,7 @@ class MAImmunizationsBackend(Backend):
         return len(self.get_slots().slots) > 0
 
     def get_soup(self, page):
-        r = requests.get(self.public_url(page))
+        r = requests.get(self.public_url(page), timeout=15)
         soup = BeautifulSoup(r.text, 'html.parser')
 
         return soup
