@@ -59,12 +59,17 @@ class RxTouchBackend(Backend):
             # Initialize cookies
             self._query_index(s)
 
-            # r = s.post(self.CHECK_ZIP_API % self.locid, data={
-            #     "zip": self.zip,
-            #     "appointmentType": 5957,
-            #     "PatientInterfaceMode": 0
-            # })
-            # output = r.text
+            r = s.post(self.CHECK_ZIP_API % self.locid, data={
+                "zip": self.zip,
+                "appointmentType": 5957,
+                "PatientInterfaceMode": 0
+            })
+            output = r.text
+
+            if self.NOT_AVAIL_MSG in output:
+                logger.info("RxTouch: Not available")
+            else:
+                logger.info("RxTouch: %s" % output)
 
             self._query_set_location(s)
 
